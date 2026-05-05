@@ -1,0 +1,19 @@
+{
+    "name": "medium",
+    "description": "Standard raw scan. Align + mesh + cleanup. No texture.",
+    "requires": [
+        "input_folder",
+        "output_project"
+    ],
+    "steps": [
+        "-addFolder {input_folder}",
+        "-align",
+        "-selectMaximalComponent",
+        "-setReconstructionRegionAuto",
+        "-calculateNormalModel",
+        "-selectMarginalTriangles",
+        "-removeSelectedTriangles",
+        "-save {output_project}",
+        "-quit"
+    ]
+}

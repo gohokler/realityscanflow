@@ -1,0 +1,17 @@
+{
+    "name": "low",
+    "description": "Quick preview mesh. Just align + raw mesh. No cleanup, no texture.",
+    "requires": [
+        "input_folder",
+        "output_project"
+    ],
+    "steps": [
+        "-addFolder {input_folder}",
+        "-align",
+        "-selectMaximalComponent",
+        "-setReconstructionRegionAuto",
+        "-calculatePreviewModel",
+        "-save {output_project}",
+        "-quit"
+    ]
+}
