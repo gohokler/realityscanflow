@@ -20,6 +20,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='RealityScanFlow — batch processor for RealityScan')
     parser.add_argument('--input', required=True, help='Path to folder with photos')
     parser.add_argument('--preset', required=True, help='Preset name (e.g. medium, low)')
+    parser.add_argument('--batch', action='store_true', help='Process all subfolders one by one')
     return parser.parse_args()
 
 
@@ -52,8 +53,11 @@ def validate_preset(preset):
 def build_command(preset, config, input_folder):
     input_path = Path(input_folder)
     project_name = input_path.name
-    output_project = input_path / '_output' / f'{project_name}.rsproj'
-
+    
+    output_dir = input_path / '_output'
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    output_project = output_dir / f'{project_name}.rsproj'
     rc_exe = config['rc_executable']
 
     built_steps = []
@@ -66,12 +70,32 @@ def build_command(preset, config, input_folder):
 
 
 def run_command(command):
-    result = subprocess.run(command, capture_output=True)
+    result = subprocess.run(command)
     if result.returncode != 0:
         print("ERROR: RealityScan failed.")
-        print(result.stderr.decode())
         return False
     return True
+
+
+def run_batch(preset, config, input_path):
+    folders = [f for f in Path(input_path).iterdir() if f.is_dir()]
+
+    if not folders:
+        print("ERROR: No subfolders found in batch folder.")
+        return
+
+    print(f"Found {len(folders)} folders to process.")
+
+    for i, folder in enumerate(folders, 1):
+        print(f"\n[{i}/{len(folders)}] Processing: {folder.name}")
+        command = build_command(preset, config, folder)
+        success = run_command(command)
+        if not success:
+            print(f"ERROR: Failed on {folder.name} — skipping.")
+            continue
+        print(f"Done: {folder.name}")
+
+    print("\nBatch complete.")
 
 
 def main():
@@ -88,13 +112,15 @@ def main():
     if not validate_preset(preset):
         return
 
-    command = build_command(preset, config, args.input)
-    success = run_command(command)
-    if not success:
-        print("Processing failed.")
-        return
-
-    print("Done!")
+    if args.batch:
+        run_batch(preset, config, args.input)
+    else:
+        command = build_command(preset, config, args.input)
+        success = run_command(command)
+        if not success:
+            print("Processing failed.")
+            return
+        print("Done!")
 
 
 if __name__ == "__main__":
