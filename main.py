@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -46,15 +47,23 @@ def build_command(preset, config, input_folder):
     output_project = input_path / '_output' / f'{project_name}.rsproj'
 
     rc_exe = config['rc_executable']
-    
+
     built_steps = []
     for step in preset['steps']:
         step = step.replace('{input_folder}', str(input_path))
         step = step.replace('{output_project}', str(output_project))
         built_steps.extend(step.split(' ', 1))
 
-    command = [rc_exe] + built_steps
-    return command
+    return [rc_exe] + built_steps
+
+
+def run_command(command):
+    result = subprocess.run(command, capture_output=True)
+    if result.returncode != 0:
+        print("ERROR: RealityScan failed.")
+        print(result.stderr.decode())
+        return False
+    return True
 
 
 def main():
@@ -67,11 +76,6 @@ def main():
     preset = load_preset('medium')
     if not validate_preset(preset):
         return
-
-    print(preset)
-
-    command = build_command(preset, config, r'C:\scans\scan_01')
-    print(command)
 
 
 if __name__ == "__main__":
