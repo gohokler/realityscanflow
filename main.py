@@ -1,5 +1,6 @@
 import json
 import subprocess
+import argparse
 from pathlib import Path
 
 
@@ -13,6 +14,13 @@ def load_config():
     except json.JSONDecodeError:
         print("ERROR: config.json is broken. Check for missing parts.")
         return None
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='RealityScanFlow — batch processor for RealityScan')
+    parser.add_argument('--input', required=True, help='Path to folder with photos')
+    parser.add_argument('--preset', required=True, help='Preset name (e.g. medium, low)')
+    return parser.parse_args()
 
 
 def load_preset(name):
@@ -67,15 +75,26 @@ def run_command(command):
 
 
 def main():
+    args = parse_args()
     print("RealityScanFlow - starting...")
 
     config = load_config()
     if config is None:
         return
 
-    preset = load_preset('medium')
+    preset = load_preset(args.preset)
+    if preset is None:
+        return
     if not validate_preset(preset):
         return
+
+    command = build_command(preset, config, args.input)
+    success = run_command(command)
+    if not success:
+        print("Processing failed.")
+        return
+
+    print("Done!")
 
 
 if __name__ == "__main__":
