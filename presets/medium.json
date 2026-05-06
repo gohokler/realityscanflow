@@ -3,7 +3,8 @@
     "description": "Standard raw scan. Align + mesh + cleanup. No texture.",
     "requires": [
         "input_folder",
-        "output_project"
+        "output_project",
+        "output_report"
     ],
     "steps": [
         "-addFolder {input_folder}",
@@ -14,6 +15,7 @@
         "-selectMarginalTriangles",
         "-removeSelectedTriangles",
         "-save {output_project}",
+        "-exportReport {output_report} {overview_template}",
         "-quit"
     ]
 }

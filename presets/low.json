@@ -3,7 +3,8 @@
     "description": "Quick preview mesh. Just align + raw mesh. No cleanup, no texture.",
     "requires": [
         "input_folder",
-        "output_project"
+        "output_project",
+        "output_report"
     ],
     "steps": [
         "-addFolder {input_folder}",
@@ -12,6 +13,7 @@
         "-setReconstructionRegionAuto",
         "-calculatePreviewModel",
         "-save {output_project}",
+        "-exportReport {output_report} {overview_template}",
         "-quit"
     ]
 }
