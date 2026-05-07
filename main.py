@@ -1,7 +1,9 @@
 import json
 import subprocess
 import argparse
+import time
 from pathlib import Path
+from bs4 import BeautifulSoup
 
 
 def load_config():
@@ -53,6 +55,15 @@ def validate_preset(preset):
     return True
 
 
+def confirm_run(args, folders_count=None):
+    # shows run summary and asks user to confirm
+    mode = f"batch ({folders_count} folders)" if args.batch else "single"
+    print(f"\n  Input:   {args.input}")
+    print(f"  Preset:  {args.preset}")
+    print(f"  Mode:    {mode}")
+    answer = input("\nContinue? [Y/n]: ").strip().lower()
+    return answer in ('', 'y', 'yes')
+
 def build_command(preset, config, input_folder):
     # builds the full RC command from preset + config + input path
     input_path = Path(input_folder)
@@ -86,6 +97,60 @@ def run_command(command):
     return True
 
 
+def is_already_processed(folder):
+    # checks if the scan was already processed by looking for .rsproj in _output
+    project_name = Path(folder).name
+    return (Path(folder) / '_output' / f'{project_name}.rsproj').exists()
+
+
+def parse_report(report_path):
+    # reads the RC HTML report and extracts key data into a dict
+    if not Path(report_path).exists():
+        print("WARNING: report not found, skipping summary.")
+        return None
+
+    with open(report_path, encoding='utf-8-sig', errors='ignore') as f:
+        soup = BeautifulSoup(f, 'html.parser')
+
+    data = {}
+    for row in soup.find_all('tr'):
+        th = row.find('th')
+        td = row.find('td')
+        if th and td:
+            data[th.text.strip()] = td.text.strip()
+
+    return data
+
+
+def print_summary(scan_name, data, elapsed):
+    # prints a short summary to terminal
+    aligned = data.get('Count of registered images', 'N/A')
+    print(f"  [{scan_name}] done in {elapsed:.0f}s. Aligned: {aligned} photos")
+
+
+def process_single(preset, config, input_folder):
+    # processes a single scan folder
+    input_path = Path(input_folder)
+
+    if is_already_processed(input_path):
+        print(f"SKIP: {input_path.name} — already processed. Delete _output/ to reprocess.")
+        return
+
+    start = time.time()
+    command = build_command(preset, config, input_path)
+    success = run_command(command)
+    elapsed = time.time() - start
+
+    if not success:
+        print("Processing failed.")
+        return
+
+    report_path = input_path / '_output' / f'{input_path.name}_report.html'
+    data = parse_report(report_path)
+    if data:
+        print_summary(input_path.name, data, elapsed)
+
+
 def run_batch(preset, config, input_path):
     # finds all subfolders and processes them one by one
     folders = [f for f in Path(input_path).iterdir() if f.is_dir()]
@@ -98,12 +163,24 @@ def run_batch(preset, config, input_path):
 
     for i, folder in enumerate(folders, 1):
         print(f"\n[{i}/{len(folders)}] Processing: {folder.name}")
+
+        if is_already_processed(folder):
+            print(f"  SKIP: {folder.name} — already processed.")
+            continue
+
+        start = time.time()
         command = build_command(preset, config, folder)
         success = run_command(command)
+        elapsed = time.time() - start
+
         if not success:
-            print(f"ERROR: Failed on {folder.name} — skipping.")
+            print(f"  ERROR: Failed on {folder.name} — skipping.")
             continue
-        print(f"Done: {folder.name}")
+
+        report_path = folder / '_output' / f'{folder.name}_report.html'
+        data = parse_report(report_path)
+        if data:
+            print_summary(folder.name, data, elapsed)
 
     print("\nBatch complete.")
 
@@ -121,15 +198,16 @@ def main():
         return
     if not validate_preset(preset):
         return
+    
+    folders_count = len([f for f in Path(args.input).iterdir() if f.is_dir()]) if args.batch else None
+    if not confirm_run(args, folders_count):
+        print("Cancelled.")
+        return
 
     if args.batch:
         run_batch(preset, config, args.input)
     else:
-        command = build_command(preset, config, args.input)
-        success = run_command(command)
-        if not success:
-            print("Processing failed.")
-            return
+        process_single(preset, config, args.input)
         print("Done!")
 
 
