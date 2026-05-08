@@ -22,9 +22,10 @@ def load_config():
 def parse_args():
     # defines what user can pass via CLI
     parser = argparse.ArgumentParser(description='RealityScanFlow — batch processor for RealityScan')
-    parser.add_argument('--input', required=True, help='Path to folder with photos')
-    parser.add_argument('--preset', required=True, help='Preset name (e.g. low, medium)')
-    parser.add_argument('--batch', action='store_true', help='Process all subfolders one by one')
+    parser.add_argument('--input', help='Path to folder with photos or projects')
+    parser.add_argument('--preset', help='Preset name (e.g. low, medium, mesh_only)')
+    parser.add_argument('--project-mode', action='store_true', help='Load existing .rsproj files instead of photo folders')
+    parser.add_argument('--list-presets', action='store_true', help='Show all available presets and exit')
     return parser.parse_args()
 
 
@@ -41,52 +42,129 @@ def load_preset(name):
         return None
 
 
-def list_presets():
-    # returns all available preset names
-    return [p.stem for p in Path('presets').glob('*.json')]
+def show_presets():
+    # prints all available presets with name and description
+    preset_files = sorted(Path('presets').glob('*.json'))
+    if not preset_files:
+        print("No presets found in presets/ folder.")
+        return
+
+    print("\nAvailable presets:\n")
+    for path in preset_files:
+        try:
+            with open(path) as p:
+                data = json.load(p)
+            name = data.get('name', path.stem)
+            desc = data.get('description', '(no description)')
+            print(f"  {name:<15} {desc}")
+        except (json.JSONDecodeError, FileNotFoundError):
+            print(f"  {path.stem:<15} (broken file — check JSON syntax)")
 
 
-def validate_preset(preset):
-    # checks that preset has all required fields
-    for field in ["name", "steps"]:
-        if field not in preset:
-            print(f"ERROR: preset is missing required field: '{field}'")
-            return False
-    return True
-
-
-def confirm_run(args, folders_count=None):
+def confirm_run(input_path, preset_name, items_count, mode_label):
     # shows run summary and asks user to confirm
-    mode = f"batch ({folders_count} folders)" if args.batch else "single"
-    print(f"\n  Input:   {args.input}")
-    print(f"  Preset:  {args.preset}")
+    mode = f"{mode_label} ({items_count})" if items_count > 1 else "single"
+    print(f"\n  Input:   {input_path}")
+    print(f"  Preset:  {preset_name}")
     print(f"  Mode:    {mode}")
     answer = input("\nContinue? [Y/n]: ").strip().lower()
     return answer in ('', 'y', 'yes')
 
 
-def build_command(preset, config, input_folder):
-    # builds the full RC command from preset + config + input path
-    input_path = Path(input_folder)
-    project_name = input_path.name
+def select_items(items, label):
+    # shows numbered list and lets user pick which to process
+    print(f"\nAvailable folders:")
+    for i, item in enumerate(items, 1):
+        print(f"  {i}. {item['display']}")
 
-    output_dir = input_path / '_output'
+    print("\nEnter numbers to process (e.g. 1 2 3) or 'all':")
+    answer = input("> ").strip().lower()
+
+    if answer == 'all':
+        return items
+
+    selected = []
+    for part in answer.split():
+        try:
+            idx = int(part) - 1
+            if 0 <= idx < len(items):
+                selected.append(items[idx])
+        except ValueError:
+            pass
+
+    return selected
+
+
+def find_photo_folders(input_path):
+    # returns list of folders to process when input is a parent dir
+    p = Path(input_path)
+    folders = [f for f in p.iterdir() if f.is_dir()]
+    return [{'folder': f, 'project_path': None, 'display': f.name} for f in folders]
+
+
+def find_projects(input_path):
+    # finds all .rsproj files in _output subfolders
+    items = []
+    for folder in sorted(Path(input_path).iterdir()):
+        if not folder.is_dir():
+            continue
+        output_dir = folder / '_output'
+        if not output_dir.exists():
+            continue
+        for rsproj in output_dir.glob('*.rsproj'):
+            items.append({
+                'folder': folder,
+                'project_path': rsproj,
+                'display': f"{folder.name}/_output/{rsproj.name}"
+            })
+    return items
+
+
+def is_input_a_photo_folder(input_path):
+    # heuristic: if input has image files directly inside, treat as single scan
+    p = Path(input_path)
+    formats = {'.jpg', '.jpeg', '.png', '.tif', '.tiff', '.bmp'}
+    for f in p.iterdir():
+        if f.is_file() and f.suffix.lower() in formats:
+            return True
+    return False
+
+
+def is_already_processed(folder):
+    # checks if the scan was already processed by looking for .rsproj in _output
+    project_name = Path(folder).name
+    return (Path(folder) / '_output' / f'{project_name}.rsproj').exists()
+
+
+def build_command(preset, config, folder, project_path=None):
+    # builds the full RC command from preset + config + paths
+    folder = Path(folder)
+    project_name = folder.name
+
+    output_dir = folder / '_output'
     output_dir.mkdir(parents=True, exist_ok=True)
     output_project = output_dir / f'{project_name}.rsproj'
     output_report = output_dir / f'{project_name}_report.html'
+
+    # for project mode — output saved alongside original with preset suffix
+    if project_path:
+        p = Path(project_path)
+        output_project = p.parent / f'{p.stem}_{preset["name"]}_processed.rsproj'
+        output_report = p.parent / f'{p.stem}_{preset["name"]}_report.html'
 
     rc_exe = config['rc_executable']
     overview_template = Path(rc_exe).parent / 'Reports' / 'Overview.html'
 
     built_steps = []
     for step in preset['steps']:
-        step = step.replace('{input_folder}', str(input_path))
+        step = step.replace('{input_folder}', str(folder))
+        step = step.replace('{input_project}', str(project_path) if project_path else '')
         step = step.replace('{output_project}', str(output_project))
         step = step.replace('{output_report}', str(output_report))
         step = step.replace('{overview_template}', str(overview_template))
         built_steps.extend(step.split(' '))
 
-    return [rc_exe] + (['-headless'] if config.get('headless', False) else []) + built_steps
+    return [rc_exe] + (['-headless'] if config.get('headless', False) else []) + built_steps, output_report
 
 
 def run_command(command):
@@ -98,16 +176,9 @@ def run_command(command):
     return True
 
 
-def is_already_processed(folder):
-    # checks if the scan was already processed by looking for .rsproj in _output
-    project_name = Path(folder).name
-    return (Path(folder) / '_output' / f'{project_name}.rsproj').exists()
-
-
 def parse_report(report_path):
     # reads the RC HTML report and extracts key data into a dict
     if not Path(report_path).exists():
-        print("WARNING: report not found, skipping summary.")
         return None
 
     with open(report_path, encoding='utf-8-sig', errors='ignore') as f:
@@ -123,87 +194,63 @@ def parse_report(report_path):
     return data
 
 
-def print_summary(scan_name, data, elapsed):
-    # prints a short summary to terminal
-    aligned = data.get('Count of registered images', 'N/A')
-    print(f"  [{scan_name}] done in {elapsed:.0f}s. Aligned: {aligned} photos")
-
-
-def process_single(preset, config, input_folder):
-    # processes a single scan folder
-    input_path = Path(input_folder)
-
-    if is_already_processed(input_path):
-        print(f"SKIP: {input_path.name} — already processed. Delete _output/ to reprocess.")
-        return
-
-    start = time.time()
-    command = build_command(preset, config, input_path)
-    success = run_command(command)
-    elapsed = time.time() - start
-
-    if not success:
-        print("Processing failed.")
-        return
-
-    report_path = input_path / '_output' / f'{input_path.name}_report.html'
-    data = parse_report(report_path)
-    if data:
-        print_summary(input_path.name, data, elapsed)
-
-
-def run_batch(preset, config, input_path):
-    # finds all subfolders and processes them one by one
-    folders = [f for f in Path(input_path).iterdir() if f.is_dir()]
-
-    if not folders:
-        print("ERROR: No subfolders found in batch folder.")
-        return
-
-    print(f"Found {len(folders)} folders to process.")
-
+def run_processing(items, preset, config):
+    # universal runner — works for both photo folders and existing projects
     success_count = 0
     skipped_count = 0
     start_total = time.time()
 
-    for i, folder in enumerate(folders, 1):
-        print(f"\n[{i}/{len(folders)}] Processing: {folder.name}")
+    for i, item in enumerate(items, 1):
+        folder = item['folder']
+        project_path = item['project_path']
+        display = item['display']
 
-        if is_already_processed(folder):
+        print(f"\n[{i}/{len(items)}] Processing: {display}")
+
+        # skip only for photo-folder mode — project mode is intentional reprocessing
+        if not project_path and is_already_processed(folder):
             print(f"  SKIP: {folder.name} — already processed.")
             skipped_count += 1
             continue
 
         start = time.time()
-        command = build_command(preset, config, folder)
+        command, report_path = build_command(preset, config, folder, project_path=project_path)
         success = run_command(command)
         elapsed = time.time() - start
 
         if not success:
-            print(f"  ERROR: Failed on {folder.name} — skipping.")
+            print(f"  ERROR: Failed on {display} — skipping.")
             continue
 
-        report_path = folder / '_output' / f'{folder.name}_report.html'
-        report_exists = report_path.exists()
-
-        if report_exists:
+        if report_path.exists():
             success_count += 1
-            data = parse_report(report_path)
-            if data:
-                print_summary(folder.name, data, elapsed)
+            parse_report(report_path)  # parsed but not displayed for now
+            print(f"  [{folder.name}] done in {elapsed:.0f}s")
 
     total_elapsed = time.time() - start_total
     minutes = int(total_elapsed // 60)
     seconds = int(total_elapsed % 60)
-    total = len(folders) - skipped_count
+    total = len(items) - skipped_count
 
-    print(f"\nBatch complete. {success_count}/{total} processed in {minutes}m {seconds}s")
+    print(f"\nDone. {success_count}/{total} processed in {minutes}m {seconds}s")
     if skipped_count > 0:
         print(f"Skipped: {skipped_count} (already processed)")
 
 
 def main():
     args = parse_args()
+
+    # standalone command — list presets and exit
+    if args.list_presets:
+        show_presets()
+        return
+
+    # both --input and --preset are required for actual processing
+    if not args.input or not args.preset:
+        print("ERROR: --input and --preset are required for processing.")
+        print("Use --list-presets to see available presets.")
+        return
+
     print("RealityScanFlow - starting...")
 
     config = load_config()
@@ -213,19 +260,41 @@ def main():
     preset = load_preset(args.preset)
     if preset is None:
         return
-    if not validate_preset(preset):
-        return
 
-    folders_count = len([f for f in Path(args.input).iterdir() if f.is_dir()]) if args.batch else None
-    if not confirm_run(args, folders_count):
+    # decide what to process
+    if args.project_mode:
+        items = find_projects(args.input)
+        if not items:
+            print("ERROR: No .rsproj files found in _output subfolders.")
+            return
+        mode_label = "project batch"
+    else:
+        if is_input_a_photo_folder(args.input):
+            # single photo folder — process directly
+            items = [{'folder': Path(args.input), 'project_path': None, 'display': Path(args.input).name}]
+            mode_label = "single"
+        else:
+            # parent folder with subfolders
+            items = find_photo_folders(args.input)
+            if not items:
+                print("ERROR: No subfolders found and no images in the input folder.")
+                return
+            mode_label = "batch"
+
+    # let user select if more than one item
+    if len(items) == 1:
+        print(f"\nFound folder: {items[0]['display']}")
+    else:
+        items = select_items(items, mode_label)
+        if not items:
+            print("No items selected.")
+            return
+
+    if not confirm_run(args.input, args.preset, len(items), mode_label):
         print("Cancelled.")
         return
 
-    if args.batch:
-        run_batch(preset, config, args.input)
-    else:
-        process_single(preset, config, args.input)
-        print("Done!")
+    run_processing(items, preset, config)
 
 
 if __name__ == "__main__":
