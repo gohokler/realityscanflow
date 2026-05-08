@@ -64,6 +64,7 @@ def confirm_run(args, folders_count=None):
     answer = input("\nContinue? [Y/n]: ").strip().lower()
     return answer in ('', 'y', 'yes')
 
+
 def build_command(preset, config, input_folder):
     # builds the full RC command from preset + config + input path
     input_path = Path(input_folder)
@@ -85,7 +86,7 @@ def build_command(preset, config, input_folder):
         step = step.replace('{overview_template}', str(overview_template))
         built_steps.extend(step.split(' '))
 
-    return [rc_exe] + built_steps
+    return [rc_exe] + (['-headless'] if config.get('headless', False) else []) + built_steps
 
 
 def run_command(command):
@@ -161,11 +162,16 @@ def run_batch(preset, config, input_path):
 
     print(f"Found {len(folders)} folders to process.")
 
+    success_count = 0
+    skipped_count = 0
+    start_total = time.time()
+
     for i, folder in enumerate(folders, 1):
         print(f"\n[{i}/{len(folders)}] Processing: {folder.name}")
 
         if is_already_processed(folder):
             print(f"  SKIP: {folder.name} — already processed.")
+            skipped_count += 1
             continue
 
         start = time.time()
@@ -178,11 +184,22 @@ def run_batch(preset, config, input_path):
             continue
 
         report_path = folder / '_output' / f'{folder.name}_report.html'
-        data = parse_report(report_path)
-        if data:
-            print_summary(folder.name, data, elapsed)
+        report_exists = report_path.exists()
 
-    print("\nBatch complete.")
+        if report_exists:
+            success_count += 1
+            data = parse_report(report_path)
+            if data:
+                print_summary(folder.name, data, elapsed)
+
+    total_elapsed = time.time() - start_total
+    minutes = int(total_elapsed // 60)
+    seconds = int(total_elapsed % 60)
+    total = len(folders) - skipped_count
+
+    print(f"\nBatch complete. {success_count}/{total} processed in {minutes}m {seconds}s")
+    if skipped_count > 0:
+        print(f"Skipped: {skipped_count} (already processed)")
 
 
 def main():
@@ -198,7 +215,7 @@ def main():
         return
     if not validate_preset(preset):
         return
-    
+
     folders_count = len([f for f in Path(args.input).iterdir() if f.is_dir()]) if args.batch else None
     if not confirm_run(args, folders_count):
         print("Cancelled.")
