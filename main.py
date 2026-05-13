@@ -60,7 +60,7 @@ def select_items(items: list[dict], label: str) -> list[dict]:
 
 def confirm_run(input_path: str, preset_name: str, items_count: int, mode_label: str) -> bool:
     # shows a summary of what will run and asks for confirmation
-    mode = f"{mode_label} ({items_count})" if items_count > 1 else "single"
+    mode = f"batch ({items_count})" if items_count > 1 else "single"
     print(f"\n  Input:   {input_path}")
     print(f"  Preset:  {preset_name}")
     print(f"  Mode:    {mode}")

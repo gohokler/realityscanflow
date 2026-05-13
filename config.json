@@ -1,5 +1,4 @@
 {
     "rc_executable": "C:\\Games\\RealityScan_2.1\\RealityScan.exe",
-    "headless": false,
-    "log_folder": "logs"
+    "headless": false
 }

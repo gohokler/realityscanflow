@@ -4,7 +4,6 @@ import time
 from pathlib import Path
 from bs4 import BeautifulSoup
 
-
 # ── constants ─────────────────────────────────────────────────────────────────
 
 CONFIG_FILE = "config.json"
@@ -15,10 +14,6 @@ REPORT_SUFFIX = "_report.html"
 PROCESSED_SUFFIX = "_processed"
 RC_REPORTS_SUBDIR = "Reports"
 RC_OVERVIEW_TEMPLATE = "Overview.html"
-
-# used only for auto-detecting whether input is a photo folder
-PHOTO_DETECTION_FORMATS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"}
-
 
 # ── config ────────────────────────────────────────────────────────────────────
 
@@ -72,11 +67,8 @@ def show_presets() -> None:
 # ── folder detection ──────────────────────────────────────────────────────────
 
 def is_photo_folder(input_path: str | Path) -> bool:
-    # returns True if the folder contains image files directly inside
-    for f in Path(input_path).iterdir():
-        if f.is_file() and f.suffix.lower() in PHOTO_DETECTION_FORMATS:
-            return True
-    return False
+    # returns True if folder contains any files directly inside
+    return any(f.is_file() for f in Path(input_path).iterdir())
 
 
 def is_already_processed(folder: str | Path) -> bool:
