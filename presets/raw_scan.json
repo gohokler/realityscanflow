@@ -1,14 +1,11 @@
 {
-    "name": "mesh_only",
-    "description": "Load existing aligned project and calculate mesh only.",
-    "requires": [
-        "input_project",
-        "output_project",
-        "output_report"
-    ],
+    "name": "raw_scan",
+    "description": "Align + full mesh + edge cleanup. Standard raw scan output, no texture.",
+    "requires": ["input_folder", "output_project", "output_report"],
     "steps": [
         "-set appQuitOnError=true",
-        "-load {input_project}",
+        "-addFolder {input_folder}",
+        "-align",
         "-selectMaximalComponent",
         "-setReconstructionRegionAuto",
         "-calculateNormalModel",

@@ -1,0 +1,13 @@
+{
+    "name": "align_only",
+    "description": "Align images and save project. Quick check if photos align before heavy processing.",
+    "requires": ["input_folder", "output_project"],
+    "steps": [
+        "-set appQuitOnError=true",
+        "-addFolder {input_folder}",
+        "-align",
+        "-selectMaximalComponent",
+        "-save {output_project}",
+        "-quit"
+    ]
+}

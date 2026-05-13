@@ -1,0 +1,14 @@
+{
+    "name": "point_cloud",
+    "description": "Align + export sparse point cloud as PLY. For survey workflows and LiDAR pipelines.",
+    "requires": ["input_folder", "output_project", "output_report"],
+    "steps": [
+        "-set appQuitOnError=true",
+        "-addFolder {input_folder}",
+        "-align",
+        "-selectMaximalComponent",
+        "-save {output_project}",
+        "-exportReport {output_report} {overview_template}",
+        "-quit"
+    ]
+}

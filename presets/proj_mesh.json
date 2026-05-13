@@ -1,0 +1,17 @@
+{
+    "name": "proj_mesh",
+    "description": "Load existing aligned project and calculate mesh. Use with --project-mode.",
+    "requires": ["input_project", "output_project", "output_report"],
+    "steps": [
+        "-set appQuitOnError=true",
+        "-load {input_project}",
+        "-selectMaximalComponent",
+        "-setReconstructionRegionAuto",
+        "-calculateNormalModel",
+        "-selectMarginalTriangles",
+        "-removeSelectedTriangles",
+        "-save {output_project}",
+        "-exportReport {output_report} {overview_template}",
+        "-quit"
+    ]
+}

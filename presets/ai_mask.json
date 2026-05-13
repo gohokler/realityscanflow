@@ -1,13 +1,11 @@
 {
-    "name": "medium",
-    "description": "Standard raw scan. Align + mesh + cleanup. No texture.",
-    "requires": [
-        "input_folder",
-        "output_project",
-        "output_report"
-    ],
+    "name": "ai_mask",
+    "description": "AI background masking + align + mesh. For objects on cluttered backgrounds.",
+    "requires": ["input_folder", "output_project", "output_report"],
     "steps": [
+        "-set appQuitOnError=true",
         "-addFolder {input_folder}",
+        "-generateAIMasks",
         "-align",
         "-selectMaximalComponent",
         "-setReconstructionRegionAuto",

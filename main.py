@@ -102,7 +102,7 @@ def main() -> None:
     else:
         if is_photo_folder(args.input):
             # input points directly to a scan folder
-            items = [{"folder": Path(args.input), "project_path": None, "display": Path(args.input).name}]
+            items = [{"folder": Path(args.input), "project_path": None, "display": Path(args.input).resolve().name}]
             mode_label = "folders"
         else:
             # input is a parent folder containing multiple scans

@@ -6,8 +6,8 @@ from bs4 import BeautifulSoup
 
 # ── constants ─────────────────────────────────────────────────────────────────
 
-CONFIG_FILE = "config.json"
-PRESETS_DIR = "presets"
+CONFIG_FILE = Path(__file__).parent / "config.json"
+PRESETS_DIR = PRESETS_DIR = Path(__file__).parent / "presets"
 OUTPUT_DIR = "_output"
 PROJECT_EXT = ".rsproj"
 REPORT_SUFFIX = "_report.html"
