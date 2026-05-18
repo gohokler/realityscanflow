@@ -1,6 +1,6 @@
 {
-    "name": "ai_mask",
-    "description": "AI background masking + align + mesh. For objects on cluttered backgrounds.",
+    "name": "raw_textured",
+    "description": "Full pipeline: align + mesh + unwrap + texture and save. Production ready output.",
     "requires": [
         "input_folder",
         "output_project",
@@ -10,7 +10,6 @@
         "-set appQuitOnError=true",
         "-importGlobalSettings {global_settings}",
         "-addFolder {input_folder}",
-        "-generateAIMasks",
         "-align",
         "-selectMaximalComponent",
         "-renameSelectedComponent {scan_name}",
@@ -20,6 +19,9 @@
         "-selectMarginalTriangles",
         "-removeSelectedTriangles",
         "-renameSelectedModel {scan_name}_mesh",
+        "-unwrap",
+        "-calculateTexture",
+        "-renameSelectedModel {scan_name}_textured",
         "-save {output_project}",
         "-exportReport {output_report} {overview_template}",
         "-quit"

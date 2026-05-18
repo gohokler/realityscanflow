@@ -5,8 +5,8 @@ from core import (
     load_config,
     load_preset,
     show_presets,
-    is_photo_folder,
-    find_photo_folders,
+    has_files,
+    find_subfolders,
     find_projects,
     run_processing,
 )
@@ -17,17 +17,17 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="RealityScanFlow — batch processor for RealityScan"
     )
-    parser.add_argument("--input", help="Path to folder with photos or projects")
-    parser.add_argument("--preset", help="Preset name (e.g. low, medium, mesh_only)")
+    parser.add_argument("--input", help="Path to folder with subfolders, photos or projects")
+    parser.add_argument("--preset", help="Preset name (e.g. raw_scan, preview)")
     parser.add_argument(
         "--project-mode",
         action="store_true",
-        help="Load existing .rsproj files instead of photo folders",
+        help="Load existing .rsproj files",
     )
     parser.add_argument(
         "--list-presets",
         action="store_true",
-        help="Show all available presets and exit",
+        help="Show all available presets",
     )
     return parser.parse_args()
 
@@ -58,12 +58,13 @@ def select_items(items: list[dict], label: str) -> list[dict]:
     return selected
 
 
-def confirm_run(input_path: str, preset_name: str, items_count: int, mode_label: str) -> bool:
-    # shows a summary of what will run and asks for confirmation
-    mode = f"batch ({items_count})" if items_count > 1 else "single"
+def confirm_run(input_path: str, preset_name: str, items: list[dict]) -> bool:
+    mode = f"batch ({len(items)})" if len(items) > 1 else "single"
     print(f"\n  Input:   {input_path}")
     print(f"  Preset:  {preset_name}")
     print(f"  Mode:    {mode}")
+    for item in items:
+        print(f"           • {item['display']}")
     answer = input("\nContinue? [Y/n]: ").strip().lower()
     return answer in ("", "y", "yes")
 
@@ -84,6 +85,9 @@ def main() -> None:
 
     print("RealityScanFlow - starting...")
 
+    # resolve input path once — handles "." and relative paths
+    input_path = str(Path(args.input).resolve())
+
     config = load_config()
     if config is None:
         return
@@ -94,19 +98,19 @@ def main() -> None:
 
     # determine what to process based on mode
     if args.project_mode:
-        items = find_projects(args.input)
+        items = find_projects(input_path)
         if not items:
             print("ERROR: No .rsproj files found in _output subfolders.")
             return
         mode_label = "projects"
     else:
-        if is_photo_folder(args.input):
+        if has_files(input_path):
             # input points directly to a scan folder
-            items = [{"folder": Path(args.input), "project_path": None, "display": Path(args.input).resolve().name}]
+            items = [{"folder": Path(input_path), "project_path": None, "display": Path(input_path).name}]
             mode_label = "folders"
         else:
             # input is a parent folder containing multiple scans
-            items = find_photo_folders(args.input)
+            items = find_subfolders(input_path)
             if not items:
                 print("ERROR: No subfolders or images found in the input folder.")
                 return
@@ -121,7 +125,7 @@ def main() -> None:
             print("No items selected.")
             return
 
-    if not confirm_run(args.input, args.preset, len(items), mode_label):
+    if not confirm_run(input_path, args.preset, items):
         print("Cancelled.")
         return
 

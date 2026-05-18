@@ -1,18 +1,24 @@
 {
     "name": "highpoly",
-    "description": "Align + maximum quality mesh + export. For retopology in ZBrush or Blender.",
-    "requires": ["input_folder", "output_project", "output_report"],
+    "description": "Align + maximum quality mesh. For retopology in ZBrush or Blender.",
+    "requires": [
+        "input_folder",
+        "output_project",
+        "output_report"
+    ],
     "steps": [
         "-set appQuitOnError=true",
+        "-importGlobalSettings {global_settings}",
         "-addFolder {input_folder}",
         "-align",
         "-selectMaximalComponent",
+        "-renameSelectedComponent {scan_name}",
         "-setReconstructionRegionAuto",
         "-calculateHighModel",
+        "-renameSelectedModel {scan_name}_highpoly_raw",
         "-selectMarginalTriangles",
         "-removeSelectedTriangles",
-        "-renameSelectedModel highpoly_model",
-        "-exportModel highpoly_model {output_project}.obj",
+        "-renameSelectedModel {scan_name}_highpoly",
         "-save {output_project}",
         "-exportReport {output_report} {overview_template}",
         "-quit"

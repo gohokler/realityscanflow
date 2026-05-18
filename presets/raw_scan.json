@@ -1,16 +1,24 @@
 {
     "name": "raw_scan",
     "description": "Align + full mesh + edge cleanup. Standard raw scan output, no texture.",
-    "requires": ["input_folder", "output_project", "output_report"],
+    "requires": [
+        "input_folder",
+        "output_project",
+        "output_report"
+    ],
     "steps": [
         "-set appQuitOnError=true",
+        "-importGlobalSettings {global_settings}",
         "-addFolder {input_folder}",
         "-align",
         "-selectMaximalComponent",
+        "-renameSelectedComponent {scan_name}",
         "-setReconstructionRegionAuto",
         "-calculateNormalModel",
+        "-renameSelectedModel {scan_name}_mesh_raw",
         "-selectMarginalTriangles",
         "-removeSelectedTriangles",
+        "-renameSelectedModel {scan_name}_mesh",
         "-save {output_project}",
         "-exportReport {output_report} {overview_template}",
         "-quit"

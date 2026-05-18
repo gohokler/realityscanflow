@@ -1,14 +1,21 @@
 {
     "name": "preview",
     "description": "Quick preview mesh. Fast visual check of scan quality. No cleanup, no texture.",
-    "requires": ["input_folder", "output_project", "output_report"],
+    "requires": [
+        "input_folder",
+        "output_project",
+        "output_report"
+    ],
     "steps": [
         "-set appQuitOnError=true",
+        "-importGlobalSettings {global_settings}",
         "-addFolder {input_folder}",
         "-align",
         "-selectMaximalComponent",
+        "-renameSelectedComponent {scan_name}",
         "-setReconstructionRegionAuto",
         "-calculatePreviewModel",
+        "-renameSelectedModel {scan_name}_preview",
         "-save {output_project}",
         "-exportReport {output_report} {overview_template}",
         "-quit"

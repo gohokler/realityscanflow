@@ -1,15 +1,19 @@
 {
     "name": "proj_texture",
-    "description": "Load existing project with mesh, calculate texture and export OBJ. Use with --project-mode.",
-    "requires": ["input_project", "output_project", "output_report"],
+    "description": "Load existing project with mesh, calculate texture and save. Use with --project-mode.",
+    "requires": [
+        "input_project",
+        "output_project",
+        "output_report"
+    ],
     "steps": [
         "-set appQuitOnError=true",
+        "-importGlobalSettings {global_settings}",
         "-load {input_project}",
         "-selectMaximalComponent",
-        "-renameSelectedModel textured_model",
         "-unwrap",
         "-calculateTexture",
-        "-exportModel textured_model {output_project}.obj",
+        "-renameSelectedModel {scan_name}_textured",
         "-save {output_project}",
         "-exportReport {output_report} {overview_template}",
         "-quit"

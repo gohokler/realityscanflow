@@ -1,12 +1,18 @@
 {
-    "name": "align_inspect",
+    "name": "align",
     "description": "Align + export overview report only. No mesh. Check alignment quality before overnight batch.",
-    "requires": ["input_folder", "output_project", "output_report"],
+    "requires": [
+        "input_folder",
+        "output_project",
+        "output_report"
+    ],
     "steps": [
         "-set appQuitOnError=true",
+        "-importGlobalSettings {global_settings}",
         "-addFolder {input_folder}",
         "-align",
         "-selectMaximalComponent",
+        "-renameSelectedComponent {scan_name}",
         "-save {output_project}",
         "-exportReport {output_report} {overview_template}",
         "-quit"
