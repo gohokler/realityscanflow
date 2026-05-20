@@ -30,7 +30,7 @@ Built for technical artists or scanning enthusiasts  who work with large scan se
 **1. Clone or download the repository**
 
 ```
-git clone https://github.com/yourusername/realityscanflow.git
+git clone https://github.com/gohokler/realityscanflow.git
 cd realityscanflow
 ```
 
