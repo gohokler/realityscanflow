@@ -6,7 +6,7 @@ from pathlib import Path
 
 CONFIG_FILE = Path(__file__).parent / "config.json"
 PRESETS_DIR = Path(__file__).parent / "presets"
-HELP_FILE = Path(__file__).parent / "guide.json"
+GUIDE_FILE = Path(__file__).parent / "guide.json"
 OUTPUT_DIR = "_output"
 PROJECT_EXT = ".rsproj"
 REPORT_SUFFIX = "_report.html"
@@ -35,7 +35,7 @@ def load_preset(name: str) -> dict | None:
 
 def load_help() -> dict | None:
     try:
-        with open(HELP_FILE, encoding="utf-8") as f:
+        with open(GUIDE_FILE, encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return None

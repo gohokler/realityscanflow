@@ -8,7 +8,6 @@ from rich.table import Table
 from rich.prompt import Prompt, Confirm
 from rich.text import Text
 from rich import box
-from rich.status import Status
 
 from core import (
     load_config,
