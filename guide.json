@@ -1,0 +1,38 @@
+{
+    "title": "RealityScanFlow — Quick Guide",
+    "intro": "Batch processor for RealityScan. Point at a folder, pick a preset, let it cook.",
+    "setup": [
+        "1. Open config.json and check rs_executable points to your RealityScan.exe",
+        "2. Open RealityScan, configure alignment/mesh/texture settings the way you want",
+        "3. Application menu -> Export Global Settings -> save as metadata/global_settings.rsconfig",
+        "4. All presets will use these settings automatically"
+    ],
+    "commands": [
+        {
+            "cmd": "rsflow --list-presets",
+            "desc": "Show all available presets with descriptions"
+        },
+        {
+            "cmd": "rsflow --guide",
+            "desc": "Show this guide"
+        },
+        {
+            "cmd": "rsflow --input \"C:\\path\\to\\folder\" --preset raw_scan",
+            "desc": "Process a folder. Tool auto-detects: single scan if photos inside, batch if subfolders"
+        },
+        {
+            "cmd": "rsflow --input \".\" --preset preview",
+            "desc": "Process current directory — cd into it first"
+        },
+        {
+            "cmd": "rsflow --input \".\" --preset proj_mesh --project-mode",
+            "desc": "Continue existing .rsproj files instead of starting from photos (add --project-mode at the end)"
+        }
+    ],
+    "tips": [
+        "Avoid spaces in folder paths — RealityScan CLI breaks on them",
+        "Each preset saves project with its own suffix, so preview and raw_scan don't conflict",
+        "Edit metadata/global_settings.rsconfig anytime — re-export from RealityScan GUI",
+        "Add new presets by dropping a .json file into presets/ folder"
+    ]
+}

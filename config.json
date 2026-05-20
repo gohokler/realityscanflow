@@ -1,4 +1,5 @@
 {
     "rs_executable": "C:\\Games\\RealityScan_2.1\\RealityScan.exe",
+    "global_settings": "metadata/global_settings.rsconfig",
     "headless": false
 }
