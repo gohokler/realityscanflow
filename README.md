@@ -2,7 +2,7 @@
 
 Batch processor for RealityScan. Point at a folder, pick a preset, let it run overnight.
 
-Built for Technical Artists who work with large scan sets and don't want to click through the UI for every project.
+Built for technical artists or scanning enthusiasts  who work with large scan sets and don't want to click through the UI for every project.
 
 ---
 
@@ -36,19 +36,15 @@ cd realityscanflow
 
 Or download ZIP and extract anywhere without spaces in the path.
 
-**2. Create virtual environment and install dependencies**
+**2. Install dependencies**
 
-```
-python -m venv .venv
-.venv\Scripts\activate
-pip install rich beautifulsoup4
-```
+Run `install.bat` — it will set up everything automatically.
 
 **3. Configure**
 
-Copy `config.example.json` to `config.json` and set your RealityScan path:
+Open `config.json` and set your RealityScan path:
 
-```json
+```config.json
 {
     "rs_executable": "C:\\Program Files\\Epic Games\\RealityScan\\RealityScan.exe",
     "global_settings": "metadata/global_settings.rsconfig",
@@ -58,30 +54,22 @@ Copy `config.example.json` to `config.json` and set your RealityScan path:
 
 **4. Export your RealityScan settings**
 
-Open RealityScan → Application menu → Export Global Settings → save as `metadata/global_settings.rsconfig`
+Open RealityScan → Application menu → Settings → (scroll down) Export Global Settings → save as `metadata/global_settings.rsconfig`
 
-This file controls alignment, mesh, texture and simplify parameters for all presets.
+This file controls alignment, mesh, texture and simplify parameters for all presets to values that you set manually before in RS
 
 ---
 
 ## Usage
 
-**Run from the tool folder:**
+Add the `realityscanflow` folder to your system PATH.
 
-```
-.venv\Scripts\python.exe main.py --input "C:\scans\batch" --preset raw_scan
-```
+Open System Properties → Environment Variables → Path → New → paste the folder path.
 
-**Or add to PATH for global access:**
+Then from any directory in terminal:
+`rsflow --guide` shows all commands and examples. That's your starting point.
 
-Add the `realityscanflow` folder to your system PATH. Then from any directory:
-
-```
-rsflow --input "." --preset raw_scan
-rsflow --input "C:\scans\batch" --preset preview
-rsflow --input "." --preset proj_mesh --project-mode
-```
-
+If you prefer not to add to PATH — just run `rsflow.bat` directly from the tool folder.
 ---
 
 ## Commands
@@ -101,7 +89,7 @@ rsflow --input "path" --preset name --project-mode    continue existing .rsproj 
 
 | Preset | Description |
 |---|---|
-| `align` | Align only + report. Check quality before overnight batch |
+| `align` | Align only + report. Check alignment quality before overnight batch |
 | `preview` | Quick preview mesh. Fast visual check |
 | `raw_scan` | Align + full mesh + cleanup |
 | `highpoly` | Maximum quality mesh for retopology |
@@ -120,8 +108,7 @@ Add your own preset by dropping a `.json` file into `presets/` — no code chang
 realityscanflow/
 ├── main.py              entry point
 ├── core.py              processing logic
-├── config.json          your local settings (not in repo)
-├── config.example.json  template for config
+├── config.json          your local settings
 ├── guide.json           guide content for --guide command
 ├── rsflow.bat           Windows launcher
 ├── presets/             preset JSON files
@@ -132,7 +119,7 @@ realityscanflow/
 
 ## Known limitations
 
-- Folder paths with spaces will break RealityScan CLI — avoid them
+- Folder paths with spaces may break RealityScan CLI — avoid them
 - `headless: true` runs RealityScan without UI — useful for overnight batch but harder to debug
 - `global_settings.rsconfig` is machine-specific — export it fresh from your RealityScan installation
 
@@ -140,8 +127,7 @@ realityscanflow/
 
 ## Roadmap
 
-- Rich CLI progress bars
-- Parallel workers (`--workers` flag)
+- Parallel workers for multiply instatses of RS (`--workers` flag)
 - Align quality check — skip mesh if < 80% cameras aligned
 - Session report JSON
 - Scan health analysis
